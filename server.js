@@ -1,3 +1,4 @@
+// Backend (server.js)
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -14,36 +15,32 @@ const io = new Server(server, {
   }
 });
 
-let users = [];
-
+// Basit GET isteği, "Cannot GET /" hatasını da çözer
 app.get("/", (req, res) => {
   res.send("Socket.io Voice Server is Running");
 });
 
 io.on("connection", (socket) => {
-  console.log("Yeni kullanıcı: " + socket.id);
+  console.log("Yeni bir kullanıcı bağlandı");
 
-  // Kullanıcı odaya katıldığında
-  socket.on("join-voice-room", (roomId) => {
-    socket.join(roomId);
-    socket.to(roomId).emit("user-joined", socket.id);
+  // Ses verisini alıp diğer kullanıcılara yaymak
+  socket.on("voice", (data) => {
+    console.log("Ses verisi alındı: ", data);  // Veriyi konsola yazdırarak kontrol et
+    socket.broadcast.emit("voice", data);
   });
 
-  // Yeni kullanıcı kaydedildiğinde
-  socket.on("new-user", (userId) => {
-    users.push({ userId, socketId: socket.id });
+  // Video kontrolü için olaylar
+  socket.on("video-sync", (data) => {
+    socket.broadcast.emit("video-sync", data); // Video durumunu tüm kullanıcılarla senkronize et
   });
 
-  // Kullanıcı ayrıldığında
+  // Bağlantı kesildiğinde kullanıcıyı bildir
   socket.on("disconnect", () => {
-    console.log("Kullanıcı ayrıldı: " + socket.id);
-    users = users.filter(user => user.socketId !== socket.id);
-    // Odayı terk eden kullanıcının ayrıldığını diğer kullanıcılara bildir
-    socket.broadcast.emit("user-left", socket.id);
+    console.log("Kullanıcı ayrıldı");
   });
 });
 
 const port = process.env.PORT || 3000;
 server.listen(port, () => {
-  console.log(`Socket.io Voice Server is Running on port ${port}`);
+  console.log(`Sunucu ${port} portunda çalışıyor`);
 });
