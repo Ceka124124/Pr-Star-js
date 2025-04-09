@@ -1,4 +1,3 @@
-// Backend (server.js)
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -15,32 +14,60 @@ const io = new Server(server, {
   }
 });
 
-// Basit GET isteği, "Cannot GET /" hatasını da çözer
+let usersInRoom = {};
+
 app.get("/", (req, res) => {
   res.send("Socket.io Voice Server is Running");
 });
 
 io.on("connection", (socket) => {
-  console.log("Yeni bir kullanıcı bağlandı");
+  console.log("Yeni kullanıcı: " + socket.id);
 
-  // Ses verisini alıp diğer kullanıcılara yaymak
-  socket.on("voice", (data) => {
-    console.log("Ses verisi alındı: ", data);  // Veriyi konsola yazdırarak kontrol et
-    socket.broadcast.emit("voice", data);
+  // Bir oda için kullanıcı sayısını takip et
+  socket.on("join-voice-room", (roomId) => {
+    socket.join(roomId);
+
+    // Kullanıcıyı odaya ekle
+    if (!usersInRoom[roomId]) {
+      usersInRoom[roomId] = [];
+    }
+    usersInRoom[roomId].push(socket.id);
+
+    // Eğer 2 kişi varsa, ses açılmaya başlasın
+    if (usersInRoom[roomId].length === 2) {
+      // 2. kullanıcıyı bilgilendir
+      socket.to(roomId).emit("start-audio");
+    }
+    console.log(`Oda: ${roomId}, Kullanıcı Sayısı: ${usersInRoom[roomId].length}`);
   });
 
-  // Video kontrolü için olaylar
-  socket.on("video-sync", (data) => {
-    socket.broadcast.emit("video-sync", data); // Video durumunu tüm kullanıcılarla senkronize et
+  socket.on("microphone-status", (data) => {
+    console.log(`${data.userId} mikrofon durumu: ${data.status}`);
+    // Mikrofon açıldığında ses gönder
+    if (data.status === "open") {
+      socket.to(data.roomId).emit("microphone-open", data.userId);
+    } else {
+      socket.to(data.roomId).emit("microphone-closed", data.userId);
+    }
   });
 
-  // Bağlantı kesildiğinde kullanıcıyı bildir
   socket.on("disconnect", () => {
-    console.log("Kullanıcı ayrıldı");
+    // Kullanıcı ayrıldığında odadan çıkar ve sayacı azalt
+    for (let roomId in usersInRoom) {
+      const index = usersInRoom[roomId].indexOf(socket.id);
+      if (index !== -1) {
+        usersInRoom[roomId].splice(index, 1);
+        console.log(`Kullanıcı ayrıldı: ${socket.id}, Oda: ${roomId}`);
+      }
+      // Eğer oda boşsa, odayı sil
+      if (usersInRoom[roomId].length === 0) {
+        delete usersInRoom[roomId];
+      }
+    }
   });
 });
 
 const port = process.env.PORT || 3000;
 server.listen(port, () => {
-  console.log(`Sunucu ${port} portunda çalışıyor`);
+  console.log(`Socket.io Voice Server is Running on port ${port}`);
 });
