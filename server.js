@@ -1,3 +1,4 @@
+// Backend (server.js)
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -24,6 +25,7 @@ io.on("connection", (socket) => {
 
   // Ses verisini alıp diğer kullanıcılara yaymak
   socket.on("voice", (data) => {
+    console.log("Ses verisi alındı: ", data);  // Veriyi konsola yazdırarak kontrol et
     socket.broadcast.emit("voice", data);
   });
 
