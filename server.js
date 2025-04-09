@@ -1,53 +1,60 @@
 const express = require("express");
 const http = require("http");
-const { Server } = require("socket.io");
-const cors = require("cors");
+const socketIo = require("socket.io");
 
 const app = express();
-app.use(cors());
-
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
-});
+const io = socketIo(server);
+
+let currentKaraokeSong = null;
+let karaokeHost = null;
 
 app.get("/", (req, res) => {
-  res.send("Socket.io Voice Server is Running");
+  res.send("Sesli Karaoke Server Çalışıyor!");
 });
 
+// Bağlantı kurulduğunda
 io.on("connection", (socket) => {
-  console.log("Yeni kullanıcı: " + socket.id);
+  console.log("Yeni bir kullanıcı bağlandı");
 
-  socket.on("join-voice-room", (roomId) => {
-    socket.join(roomId);
-    socket.to(roomId).emit("user-joined", socket.id);
+  // Şarkı seçildiğinde
+  socket.on("song-selected", (videoId) => {
+    console.log(`Bir kullanıcı şarkı seçti: ${videoId}`);
 
-    // OFFER
-    socket.on("offer", (data) => {
-      io.to(data.to).emit("offer", { from: socket.id, offer: data.offer });
-    });
+    // Karaoke başlatan kişiyi belirle
+    if (!karaokeHost) {
+      karaokeHost = socket.id;  // Şarkıyı ilk seçen kullanıcı başlatıcı olur
+    }
 
-    // ANSWER
-    socket.on("answer", (data) => {
-      io.to(data.to).emit("answer", { from: socket.id, answer: data.answer });
-    });
+    currentKaraokeSong = videoId;
 
-    // ICE CANDIDATE
-    socket.on("candidate", (data) => {
-      io.to(data.to).emit("candidate", { from: socket.id, candidate: data.candidate });
-    });
+    // Karaoke başlatan kişiye özel şarkı ID'si ile bildirim
+    socket.emit("karaoke-start", videoId);
 
-    // Ayrıldığında
-    socket.on("disconnect", () => {
-      socket.to(roomId).emit("user-left", socket.id);
-    });
+    // Diğer tüm kullanıcılara da şarkı başlatma bilgisi gönder
+    socket.broadcast.emit("karaoke-start", videoId);
+  });
+
+  // Karaoke başlatıldığında sadece başlatan kişinin sesi duyulsun
+  socket.on("start-karaoke", (videoId) => {
+    if (socket.id === karaokeHost) {
+      // Şarkıyı başlatan kişi, diğer kullanıcılar dinlesin
+      io.emit("karaoke-start", videoId);
+    } else {
+      socket.emit("error", "Yalnızca karaoke başlatıcı şarkıyı okuyabilir.");
+    }
+  });
+
+  // Bağlantı kesildiğinde
+  socket.on("disconnect", () => {
+    console.log("Bir kullanıcı ayrıldı");
+    if (socket.id === karaokeHost) {
+      karaokeHost = null;  // Karaoke başlatıcı ayrıldığında sıfırlanır
+    }
   });
 });
 
-const port = process.env.PORT || 3000;
+const port = 3000;
 server.listen(port, () => {
-  console.log(`Socket.io Voice Server is Running on port ${port}`);
+  console.log(`Server ${port} portunda çalışıyor`);
 });
