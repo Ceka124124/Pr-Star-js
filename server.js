@@ -9,7 +9,7 @@ app.use(cors());
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // Belirli bir domain ile sınırlamak için "*" yerine URL yazabilirsiniz
+    origin: "*",
     methods: ["GET", "POST"]
   }
 });
@@ -32,20 +32,6 @@ io.on("connection", (socket) => {
   // Yeni kullanıcı kaydedildiğinde
   socket.on("new-user", (userId) => {
     users.push({ userId, socketId: socket.id });
-  });
-
-  // Mikrofon durumu değiştiğinde
-  socket.on("microphone-status", (data) => {
-    console.log(`${data.userId} mikrofon durumu: ${data.status}`);
-    // Mikrofon durumu değiştiğinde tüm kullanıcılara bildir
-    socket.to(data.roomId).emit("microphone-status-update", data);
-  });
-
-  // Ses verisini alıp iletme
-  socket.on("audio-stream", (data) => {
-    console.log("Ses verisi alındı...");
-    // Odaya katılan tüm kullanıcılara ses verisini gönder
-    socket.to(data.roomId).emit("audio-stream", data.audioData);
   });
 
   // Kullanıcı ayrıldığında
