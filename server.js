@@ -9,7 +9,7 @@ app.use(cors());
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "*", // Belirli bir domain ile sınırlamak için "*" yerine URL yazabilirsiniz
     methods: ["GET", "POST"]
   }
 });
@@ -23,36 +23,30 @@ app.get("/", (req, res) => {
 io.on("connection", (socket) => {
   console.log("Yeni kullanıcı: " + socket.id);
 
+  // Kullanıcı odaya katıldığında
   socket.on("join-voice-room", (roomId) => {
     socket.join(roomId);
     socket.to(roomId).emit("user-joined", socket.id);
   });
 
+  // Yeni kullanıcı kaydedildiğinde
   socket.on("new-user", (userId) => {
     users.push({ userId, socketId: socket.id });
   });
 
+  // Mikrofon durumu değiştiğinde
   socket.on("microphone-status", (data) => {
     console.log(`${data.userId} mikrofon durumu: ${data.status}`);
+    // Mikrofon durumu değiştiğinde tüm kullanıcılara bildir
+    socket.to(data.roomId).emit("microphone-status-update", data);
   });
 
-  socket.on("dice-roll", (data) => {
-    let winner = null;
-    const rollResults = users.map(user => {
-      return { userId: user.userId, roll: Math.floor(Math.random() * 6) + 1 };
-    });
-    
-    // Kazanan belirleme
-    winner = rollResults.reduce((prev, current) => (prev.roll > current.roll) ? prev : current);
-    
-    // Sonucu tüm kullanıcılara gönder
-    io.to(socket.id).emit("dice-roll-result", { winner: winner.userId });
-    io.to(winner.socketId).emit("dice-roll-result", { winner: winner.userId });
-  });
-
+  // Kullanıcı ayrıldığında
   socket.on("disconnect", () => {
     console.log("Kullanıcı ayrıldı: " + socket.id);
     users = users.filter(user => user.socketId !== socket.id);
+    // Odayı terk eden kullanıcının ayrıldığını diğer kullanıcılara bildir
+    socket.broadcast.emit("user-left", socket.id);
   });
 });
 
