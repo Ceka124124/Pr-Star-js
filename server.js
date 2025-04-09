@@ -9,12 +9,12 @@ app.use(cors());
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "*", // İzin verilen domainleri buraya ekleyebilirsiniz
     methods: ["GET", "POST"]
   }
 });
 
-let usersInRoom = {};
+let usersInRoom = {};  // Oda başına kullanıcılar
 
 app.get("/", (req, res) => {
   res.send("Socket.io Voice Server is Running");
@@ -23,27 +23,27 @@ app.get("/", (req, res) => {
 io.on("connection", (socket) => {
   console.log("Yeni kullanıcı: " + socket.id);
 
-  // Bir oda için kullanıcı sayısını takip et
+  // Odaya katılma
   socket.on("join-voice-room", (roomId) => {
     socket.join(roomId);
 
-    // Kullanıcıyı odaya ekle
+    // Kullanıcıyı odada sakla
     if (!usersInRoom[roomId]) {
       usersInRoom[roomId] = [];
     }
     usersInRoom[roomId].push(socket.id);
 
-    // Eğer 2 kişi varsa, ses açılmaya başlasın
+    // Odaya 2. kullanıcı gelirse ses iletimi başlat
     if (usersInRoom[roomId].length === 2) {
-      // 2. kullanıcıyı bilgilendir
+      console.log("İki kullanıcı bağlandı, ses başlatılıyor...");
       socket.to(roomId).emit("start-audio");
     }
     console.log(`Oda: ${roomId}, Kullanıcı Sayısı: ${usersInRoom[roomId].length}`);
   });
 
+  // Mikrofon durumu
   socket.on("microphone-status", (data) => {
     console.log(`${data.userId} mikrofon durumu: ${data.status}`);
-    // Mikrofon açıldığında ses gönder
     if (data.status === "open") {
       socket.to(data.roomId).emit("microphone-open", data.userId);
     } else {
@@ -51,14 +51,15 @@ io.on("connection", (socket) => {
     }
   });
 
+  // Kullanıcı ayrıldığında odadan çıkart
   socket.on("disconnect", () => {
-    // Kullanıcı ayrıldığında odadan çıkar ve sayacı azalt
     for (let roomId in usersInRoom) {
       const index = usersInRoom[roomId].indexOf(socket.id);
       if (index !== -1) {
         usersInRoom[roomId].splice(index, 1);
         console.log(`Kullanıcı ayrıldı: ${socket.id}, Oda: ${roomId}`);
       }
+
       // Eğer oda boşsa, odayı sil
       if (usersInRoom[roomId].length === 0) {
         delete usersInRoom[roomId];
