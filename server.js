@@ -41,6 +41,13 @@ io.on("connection", (socket) => {
     socket.to(data.roomId).emit("microphone-status-update", data);
   });
 
+  // Ses verisini alıp iletme
+  socket.on("audio-stream", (data) => {
+    console.log("Ses verisi alındı...");
+    // Odaya katılan tüm kullanıcılara ses verisini gönder
+    socket.to(data.roomId).emit("audio-stream", data.audioData);
+  });
+
   // Kullanıcı ayrıldığında
   socket.on("disconnect", () => {
     console.log("Kullanıcı ayrıldı: " + socket.id);
