@@ -14,6 +14,8 @@ const io = new Server(server, {
   }
 });
 
+let users = [];
+
 app.get("/", (req, res) => {
   res.send("Socket.io Voice Server is Running");
 });
@@ -24,26 +26,33 @@ io.on("connection", (socket) => {
   socket.on("join-voice-room", (roomId) => {
     socket.join(roomId);
     socket.to(roomId).emit("user-joined", socket.id);
+  });
 
-    // OFFER
-    socket.on("offer", (data) => {
-      io.to(data.to).emit("offer", { from: socket.id, offer: data.offer });
-    });
+  socket.on("new-user", (userId) => {
+    users.push({ userId, socketId: socket.id });
+  });
 
-    // ANSWER
-    socket.on("answer", (data) => {
-      io.to(data.to).emit("answer", { from: socket.id, answer: data.answer });
-    });
+  socket.on("microphone-status", (data) => {
+    console.log(`${data.userId} mikrofon durumu: ${data.status}`);
+  });
 
-    // ICE CANDIDATE
-    socket.on("candidate", (data) => {
-      io.to(data.to).emit("candidate", { from: socket.id, candidate: data.candidate });
+  socket.on("dice-roll", (data) => {
+    let winner = null;
+    const rollResults = users.map(user => {
+      return { userId: user.userId, roll: Math.floor(Math.random() * 6) + 1 };
     });
+    
+    // Kazanan belirleme
+    winner = rollResults.reduce((prev, current) => (prev.roll > current.roll) ? prev : current);
+    
+    // Sonucu tüm kullanıcılara gönder
+    io.to(socket.id).emit("dice-roll-result", { winner: winner.userId });
+    io.to(winner.socketId).emit("dice-roll-result", { winner: winner.userId });
+  });
 
-    // Ayrıldığında
-    socket.on("disconnect", () => {
-      socket.to(roomId).emit("user-left", socket.id);
-    });
+  socket.on("disconnect", () => {
+    console.log("Kullanıcı ayrıldı: " + socket.id);
+    users = users.filter(user => user.socketId !== socket.id);
   });
 });
 
