@@ -7,21 +7,16 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // Güvenlik için sadece client domainini yazabilirsin
-    methods: ["GET", "POST"]
+    origin: '*',
+    methods: ['GET', 'POST']
   }
 });
 
 io.on('connection', (socket) => {
-  console.log('Kullanıcı bağlandı:', socket.id);
+  console.log('Yeni kullanıcı bağlandı:', socket.id);
 
-  socket.on('join-room', (roomId) => {
-    socket.join(roomId);
-    console.log(`Kullanıcı ${socket.id} odaya katıldı: ${roomId}`);
-  });
-
-  socket.on('audio-data', ({ roomId, data }) => {
-    socket.to(roomId).emit('receive-audio', data);
+  socket.on('voice', (data) => {
+    socket.broadcast.emit('voice', data);
   });
 
   socket.on('disconnect', () => {
@@ -29,7 +24,10 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`Sunucu çalışıyor: http://localhost:${PORT}`);
+app.get('/', (req, res) => {
+  res.send('Sesli sohbet sunucusu çalışıyor');
+});
+
+server.listen(3000, () => {
+  console.log('Sunucu 3000 portunda çalışıyor');
 });
