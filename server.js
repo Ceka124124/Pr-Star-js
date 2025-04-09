@@ -4,25 +4,24 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 
 const app = express();
-app.use(cors());
-
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: "*", // Güvenlik için sadece client domainini yazabilirsin
+    methods: ["GET", "POST"]
   }
 });
 
 io.on('connection', (socket) => {
   console.log('Kullanıcı bağlandı:', socket.id);
 
-  socket.on('join-room', (room) => {
-    socket.join(room);
-    console.log(`Kullanıcı ${socket.id} ${room} odasına katıldı`);
+  socket.on('join-room', (roomId) => {
+    socket.join(roomId);
+    console.log(`Kullanıcı ${socket.id} odaya katıldı: ${roomId}`);
   });
 
-  socket.on('voice', ({ room, data }) => {
-    socket.to(room).emit('voice', data);
+  socket.on('audio-data', ({ roomId, data }) => {
+    socket.to(roomId).emit('receive-audio', data);
   });
 
   socket.on('disconnect', () => {
@@ -30,7 +29,7 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
-  console.log(`Sunucu çalışıyor: ${PORT}`);
+  console.log(`Sunucu çalışıyor: http://localhost:${PORT}`);
 });
