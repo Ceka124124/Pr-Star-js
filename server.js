@@ -14,40 +14,31 @@ const io = new Server(server, {
   }
 });
 
+// Basit GET isteği, "Cannot GET /" hatasını da çözer
 app.get("/", (req, res) => {
   res.send("Socket.io Voice Server is Running");
 });
 
 io.on("connection", (socket) => {
-  console.log("Yeni kullanıcı: " + socket.id);
+  console.log("Yeni bir kullanıcı bağlandı");
 
-  socket.on("join-voice-room", (roomId) => {
-    socket.join(roomId);
-    socket.to(roomId).emit("user-joined", socket.id);
+  // Ses verisini alıp diğer kullanıcılara yaymak
+  socket.on("voice", (data) => {
+    socket.broadcast.emit("voice", data);
+  });
 
-    // OFFER
-    socket.on("offer", (data) => {
-      io.to(data.to).emit("offer", { from: socket.id, offer: data.offer });
-    });
+  // Video kontrolü için olaylar
+  socket.on("video-sync", (data) => {
+    socket.broadcast.emit("video-sync", data); // Video durumunu tüm kullanıcılarla senkronize et
+  });
 
-    // ANSWER
-    socket.on("answer", (data) => {
-      io.to(data.to).emit("answer", { from: socket.id, answer: data.answer });
-    });
-
-    // ICE CANDIDATE
-    socket.on("candidate", (data) => {
-      io.to(data.to).emit("candidate", { from: socket.id, candidate: data.candidate });
-    });
-
-    // Ayrıldığında
-    socket.on("disconnect", () => {
-      socket.to(roomId).emit("user-left", socket.id);
-    });
+  // Bağlantı kesildiğinde kullanıcıyı bildir
+  socket.on("disconnect", () => {
+    console.log("Kullanıcı ayrıldı");
   });
 });
 
 const port = process.env.PORT || 3000;
 server.listen(port, () => {
-  console.log(`Socket.io Voice Server is Running on port ${port}`);
+  console.log(`Sunucu ${port} portunda çalışıyor`);
 });
