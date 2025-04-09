@@ -1,37 +1,37 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const cors = require('cors');
-const port = process.env.PORT || 3000;
-server.listen(port, () => {
-  console.log(`Sunucu ${port} portunda çalışıyor`);
-});
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const cors = require("cors");
 
 const app = express();
+app.use(cors());
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
+    origin: "*",
+    methods: ["GET", "POST"]
   }
 });
 
-io.on('connection', (socket) => {
-  console.log('Yeni kullanıcı bağlandı:', socket.id);
+// Basit GET isteği, "Cannot GET /" hatasını da çözer
+app.get("/", (req, res) => {
+  res.send("Socket.io Voice Server is Running");
+});
 
-  socket.on('voice', (data) => {
-    socket.broadcast.emit('voice', data);
+io.on("connection", (socket) => {
+  console.log("Yeni bir kullanıcı bağlandı");
+
+  socket.on("voice", (data) => {
+    socket.broadcast.emit("voice", data);
   });
 
-  socket.on('disconnect', () => {
-    console.log('Kullanıcı ayrıldı:', socket.id);
+  socket.on("disconnect", () => {
+    console.log("Kullanıcı ayrıldı");
   });
 });
 
-app.get('/', (req, res) => {
-  res.send('Sesli sohbet sunucusu çalışıyor');
-});
-
-server.listen(3000, () => {
-  console.log('Sunucu 3000 portunda çalışıyor');
+const port = process.env.PORT || 3000;
+server.listen(port, () => {
+  console.log(`Sunucu ${port} portunda çalışıyor`);
 });
