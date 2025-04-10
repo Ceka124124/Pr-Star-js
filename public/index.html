@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Karaoke</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Online Karaoke</h1>
+        <div class="controls">
+            <button id="startBtn">Ses Kaydet</button>
+            <button id="stopBtn" disabled>Kaydı Durdur</button>
+        </div>
+        <div class="messages">
+            <h3>Mesajlar:</h3>
+            <ul id="messageList"></ul>
+        </div>
+        <div class="chat">
+            <input type="text" id="messageInput" placeholder="Mesaj yaz...">
+            <button id="sendBtn">Gönder</button>
+        </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
