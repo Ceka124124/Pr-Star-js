@@ -1,71 +1,54 @@
-const socket = new WebSocket('ws://');  // Aynı sunucu üzerinde çalıştığı için URL belirtmeye gerek yok
+// Agora Client'ını oluşturma
+const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+const appId = "3ca1077e10094bbaac5c2358d238f02c"; // App ID'nizi buraya girin
+const token = "007eJxTYCi3tD6npub3TO+fotoC2R9zV3MtTr0Xyzfr6OG/fOHC/IUKDMbJiYYG5uaphgYGliZJSYmJyabJRsamFilGxhZpBkbJgi4/0hsCGRm0d/iwMjJAIIjPxhBQFFySWMTAAAD2eB32"; // Token'ı buraya girin
+const channelName = "PrStar"; // Kanal adı
 
-let mediaRecorder;
-let audioChunks = [];
+// Agora Client'ını başlatma
+client.init(appId, () => {
+    console.log("AgoraRTC client initialized");
+    
+    // Odaya katılma
+    client.join(token, channelName, null, (uid) => {
+        console.log("User " + uid + " joined channel: " + channelName);
+        
+        // Kullanıcı sesi başlatma
+        const localStream = AgoraRTC.createStream({
+            streamID: uid,
+            audio: true,
+            video: false,
+            screen: false
+        });
 
-const startBtn = document.getElementById('startBtn');
-const stopBtn = document.getElementById('stopBtn');
-const messageInput = document.getElementById('messageInput');
-const sendBtn = document.getElementById('sendBtn');
-const messageList = document.getElementById('messageList');
-
-// Ses kaydetmeye başla
-startBtn.addEventListener('click', () => {
-    startRecording();
+        // Yerel akışı başlatma
+        localStream.init(() => {
+            console.log("Local stream initialized");
+            localStream.play("local_stream");
+            client.publish(localStream, (err) => {
+                console.error("Publish local stream error: " + err);
+            });
+        });
+    });
+}, (err) => {
+    console.error("AgoraRTC client init failed", err);
 });
 
-// Ses kaydını durdur
-stopBtn.addEventListener('click', () => {
-    stopRecording();
+// Diğer kullanıcıları dinleyin
+client.on("stream-added", (evt) => {
+    const stream = evt.stream;
+    const streamId = stream.getId();
+    client.subscribe(stream, (err) => {
+        console.log("Subscribe stream failed: " + err);
+    });
 });
 
-// WebSocket bağlantısı açıldığında
-socket.onopen = () => {
-    console.log('WebSocket bağlantısı kuruldu.');
-};
+// Diğer kullanıcıların akışını yayınla
+client.on("stream-subscribed", (evt) => {
+    const remoteStream = evt.stream;
+    remoteStream.play("remote_stream_" + remoteStream.getId());
+});
 
-// Ses kaydını başlat
-async function startRecording() {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    
-    mediaRecorder.ondataavailable = event => {
-        audioChunks.push(event.data);
-    };
-    
-    mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        socket.send(audioBlob);  // Ses verisini sunucuya gönder
-        audioChunks = [];
-    };
-    
-    mediaRecorder.start();
-    
-    startBtn.disabled = true;
-    stopBtn.disabled = false;
-}
-
-// Ses kaydını durdur
-function stopRecording() {
-    mediaRecorder.stop();
-    
-    startBtn.disabled = false;
-    stopBtn.disabled = true;
-}
-
-// Mesajları almak ve ekrana yazdırmak
-socket.onmessage = (event) => {
-    const audioBlob = event.data;
-    const audioUrl = URL.createObjectURL(audioBlob);  // Ses verisini URL'ye dönüştür
-    const audio = new Audio(audioUrl);  // Yeni bir Audio objesi oluştur
-    audio.play();  // Ses verisini çal
-};
-
-// Sohbet mesajı gönder
-sendBtn.addEventListener('click', () => {
-    const message = messageInput.value;
-    if (message) {
-        socket.send(message);  // Sohbet mesajını sunucuya gönder
-        messageInput.value = '';  // Mesaj kutusunu temizle
-    }
+// Kullanıcı odadan çıktığında
+client.on("peer-leave", (evt) => {
+    console.log("Peer has left the channel: " + evt.uid);
 });
