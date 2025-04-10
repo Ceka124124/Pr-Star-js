@@ -3,10 +3,14 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const cors = require('cors'); // CORS hatalarını engellemek için
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
+
+// CORS ayarlarını yap
+app.use(cors());
 
 // Public klasörü üzerinden HTML dosyalarını sunalım
 app.use(express.static('public'));
@@ -34,6 +38,6 @@ io.on('connection', (socket) => {
 });
 
 // Sunucuyu başlatma
-server.listen(3000, () => {
+server.listen(process.env.PORT || 3000, () => {
     console.log('Sunucu http://localhost:3000 adresinde çalışıyor');
 });
