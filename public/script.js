@@ -1,4 +1,4 @@
-const socket = io();  // Eğer sunucu ve istemci aynı host'taysa, sadece "io()" kullanılır
+const socket = new WebSocket('ws://localhost:3000');  // WebSocket bağlantısı
 
 let mediaRecorder;
 let audioChunks = [];
@@ -19,14 +19,10 @@ stopBtn.addEventListener('click', () => {
     stopRecording();
 });
 
-// Mesaj gönder
-sendBtn.addEventListener('click', () => {
-    const message = messageInput.value;
-    if (message) {
-        socket.emit('message', message);
-        messageInput.value = '';  // Mesaj kutusunu temizle
-    }
-});
+// WebSocket bağlantısı açıldığında
+socket.onopen = () => {
+    console.log('WebSocket bağlantısı kuruldu.');
+};
 
 // Ses kaydını başlat
 async function startRecording() {
@@ -39,7 +35,7 @@ async function startRecording() {
     
     mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        socket.emit('audio', audioBlob);  // Ses verisini sunucuya gönder
+        socket.send(audioBlob);  // Ses verisini sunucuya gönder
         audioChunks = [];
     };
     
@@ -58,15 +54,18 @@ function stopRecording() {
 }
 
 // Mesajları almak ve ekrana yazdırmak
-socket.on('message', (message) => {
-    const li = document.createElement('li');
-    li.textContent = message;
-    messageList.appendChild(li);
-});
-
-// Ses kaydını almak ve oynatmak
-socket.on('audio', (audioBlob) => {
+socket.onmessage = (event) => {
+    const audioBlob = event.data;
     const audioUrl = URL.createObjectURL(audioBlob);  // Ses verisini URL'ye dönüştür
     const audio = new Audio(audioUrl);  // Yeni bir Audio objesi oluştur
     audio.play();  // Ses verisini çal
+};
+
+// Sohbet mesajı gönder
+sendBtn.addEventListener('click', () => {
+    const message = messageInput.value;
+    if (message) {
+        socket.send(message);  // Sohbet mesajını sunucuya gönder
+        messageInput.value = '';  // Mesaj kutusunu temizle
+    }
 });
