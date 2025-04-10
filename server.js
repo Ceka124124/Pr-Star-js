@@ -6,31 +6,34 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-app.use(express.static('public')); // Frontend dosyalarını public klasöründe bulunduracağız
+// Statik dosyaları sunma
+app.use(express.static('public'));
 
+// Socket.io bağlantısı
 io.on('connection', (socket) => {
-    console.log('Yeni bir kullanıcı bağlandı');
+  console.log('Yeni bir kullanıcı bağlandı!');
 
-    socket.on('offer', (offer) => {
-        console.log('Offer alındı');
-        socket.broadcast.emit('offer', offer);
-    });
+  // Ses verisi alındığında
+  socket.on('audio', (audioBlob) => {
+    console.log('Ses verisi alındı!');
+    // Ses verisini diğer kullanıcılara gönder
+    socket.broadcast.emit('audio', audioBlob);
+  });
 
-    socket.on('answer', (answer) => {
-        console.log('Answer alındı');
-        socket.broadcast.emit('answer', answer);
-    });
+  // Sohbet mesajı alındığında
+  socket.on('message', (message) => {
+    console.log('Mesaj alındı:', message);
+    // Mesajı tüm kullanıcılara gönder
+    io.emit('message', message);
+  });
 
-    socket.on('candidate', (candidate) => {
-        console.log('ICE Candidate alındı');
-        socket.broadcast.emit('candidate', candidate);
-    });
-
-    socket.on('disconnect', () => {
-        console.log('Kullanıcı bağlantısı kesildi');
-    });
+  // Bağlantı koparsa
+  socket.on('disconnect', () => {
+    console.log('Bir kullanıcı bağlantıyı kesti!');
+  });
 });
 
+// Sunucuyu başlatma
 server.listen(3000, () => {
-    console.log('Sunucu 3000 portunda çalışıyor');
+  console.log('Sunucu 3000 portunda çalışıyor...');
 });
