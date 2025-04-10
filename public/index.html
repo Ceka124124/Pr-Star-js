@@ -3,26 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Online Karaoke</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Agora Sesli Sohbet</title>
+    <script src="https://cdn.agora.io/sdk/release/AgoraRTC_N.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Online Karaoke</h1>
-        <div class="controls">
-            <button id="startBtn">Ses Kaydet</button>
-            <button id="stopBtn" disabled>Kaydı Durdur</button>
-        </div>
-        <div class="messages">
-            <h3>Mesajlar:</h3>
-            <ul id="messageList"></ul>
-        </div>
-        <div class="chat">
-            <input type="text" id="messageInput" placeholder="Mesaj yaz...">
-            <button id="sendBtn">Gönder</button>
-        </div>
-    </div>
-    <script src="/socket.io/socket.io.js"></script>
+    <h2>Agora Sesli Sohbet</h2>
+
+    <div id="local_stream"></div> <!-- Yerel kullanıcı sesi -->
+    <div id="remote_stream_1"></div> <!-- Uzak kullanıcı 1 -->
+    <div id="remote_stream_2"></div> <!-- Uzak kullanıcı 2 -->
+
     <script src="script.js"></script>
 </body>
 </html>
