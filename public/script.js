@@ -1,4 +1,4 @@
-const socket = io('https://prstar-voice-server.onrender.com');  // Render URL'ini buraya ekleyin
+const socket = io();  // Eğer sunucu ve istemci aynı host'taysa, sadece "io()" kullanılır
 
 let mediaRecorder;
 let audioChunks = [];
@@ -66,7 +66,7 @@ socket.on('message', (message) => {
 
 // Ses kaydını almak ve oynatmak
 socket.on('audio', (audioBlob) => {
-    const audioUrl = URL.createObjectURL(audioBlob);
-    const audio = new Audio(audioUrl);
-    audio.play();
+    const audioUrl = URL.createObjectURL(audioBlob);  // Ses verisini URL'ye dönüştür
+    const audio = new Audio(audioUrl);  // Yeni bir Audio objesi oluştur
+    audio.play();  // Ses verisini çal
 });
