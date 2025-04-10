@@ -4,15 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agora Sesli Sohbet</title>
+    <!-- Agora SDK -->
     <script src="https://cdn.agora.io/sdk/release/AgoraRTC_N.js"></script>
 </head>
 <body>
     <h2>Agora Sesli Sohbet</h2>
 
-    <div id="local_stream"></div> <!-- Yerel kullanıcı sesi -->
-    <div id="remote_stream_1"></div> <!-- Uzak kullanıcı 1 -->
-    <div id="remote_stream_2"></div> <!-- Uzak kullanıcı 2 -->
+    <!-- Yerel akışın gösterileceği alan -->
+    <div id="local_stream" style="width: 100%; height: 200px; background-color: #ddd;"></div>
 
+    <!-- Diğer kullanıcıların akışlarının gösterileceği alan -->
+    <div id="remote_stream_1" style="width: 100%; height: 200px; background-color: #f0f0f0;"></div>
+
+    <!-- JS dosyasını dahil etme -->
     <script src="script.js"></script>
 </body>
 </html>
