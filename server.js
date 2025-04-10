@@ -1,33 +1,31 @@
 const express = require('express');
 const http = require('http');
-const socketIo = require('socket.io');
+const WebSocket = require('ws');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const wss = new WebSocket.Server({ server });
 
 app.use(express.static('public'));  // Public klasöründe HTML, CSS ve JS dosyalarını kullanacak
 
-// Socket.io bağlantısı
-io.on('connection', (socket) => {
+// WebSocket bağlantısı
+wss.on('connection', (ws) => {
     console.log('Yeni bir kullanıcı bağlandı!');
-
+    
     // Ses verisi alındığında
-    socket.on('audio', (audioBlob) => {
-        console.log('Ses verisi alındı!');
-        // Ses verisini diğer kullanıcılara gönder
-        socket.broadcast.emit('audio', audioBlob);  // broadcast.emit kullanarak diğer kullanıcılara gönder
-    });
-
-    // Sohbet mesajı alındığında
-    socket.on('message', (message) => {
+    ws.on('message', (message) => {
         console.log('Mesaj alındı:', message);
-        // Mesajı tüm kullanıcılara gönder
-        io.emit('message', message);
+
+        // Mesajı diğer kullanıcılara ilet
+        wss.clients.forEach((client) => {
+            if (client !== ws && client.readyState === WebSocket.OPEN) {
+                client.send(message);  // Ses verisini diğer kullanıcılara gönder
+            }
+        });
     });
 
     // Bağlantı koparsa
-    socket.on('disconnect', () => {
+    ws.on('close', () => {
         console.log('Bir kullanıcı bağlantıyı kesti!');
     });
 });
