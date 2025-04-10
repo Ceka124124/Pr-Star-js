@@ -1,4 +1,4 @@
-const socket = new WebSocket('ws://localhost:3000');  // WebSocket bağlantısı
+const socket = new WebSocket('ws://');  // Aynı sunucu üzerinde çalıştığı için URL belirtmeye gerek yok
 
 let mediaRecorder;
 let audioChunks = [];
